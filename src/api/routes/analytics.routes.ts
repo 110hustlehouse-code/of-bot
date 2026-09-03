@@ -9,19 +9,21 @@ analyticsRouter.use(authMiddleware);
 
 analyticsRouter.get('/creator/:creatorId', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const creatorId = req.params.creatorId as string;
+
     const [fanStats] = await db.select({
       totalFans: count(fans.id),
       totalRevenue: sum(fans.totalSpent),
       avgSpend: avg(fans.totalSpent),
-    }).from(fans).where(eq(fans.creatorId, req.params.creatorId));
+    }).from(fans).where(eq(fans.creatorId, creatorId));
 
     const [msgStats] = await db.select({
       totalMessages: count(messages.id),
-    }).from(messages).where(eq(messages.creatorId, req.params.creatorId));
+    }).from(messages).where(eq(messages.creatorId, creatorId));
 
     const [ppvStats] = await db.select({
       totalSent: count(ppvEvents.id),
-    }).from(ppvEvents).where(eq(ppvEvents.creatorId, req.params.creatorId));
+    }).from(ppvEvents).where(eq(ppvEvents.creatorId, creatorId));
 
     res.json({ fanStats, msgStats, ppvStats });
   } catch (err) {
@@ -40,7 +42,6 @@ analyticsRouter.get('/agency', async (req: AuthRequest, res: Response): Promise<
         totalFans: count(fans.id),
         totalRevenue: sum(fans.totalSpent),
       }).from(fans).where(eq(fans.creatorId, c.id));
-
       return { creatorId: c.id, name: c.name, isActive: c.isActive, ...s };
     }));
 

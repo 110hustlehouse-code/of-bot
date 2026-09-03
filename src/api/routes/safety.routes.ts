@@ -10,8 +10,9 @@ safetyRouter.use(authMiddleware);
 
 safetyRouter.post('/kill/:creatorId', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const reason = Array.isArray(req.body.reason) ? req.body.reason[0] : (req.body.reason ?? 'Manual kill by agency');
-    await killCreator(req.params.creatorId, reason);
+    const creatorId = req.params.creatorId as string;
+    const reason: string = Array.isArray(req.body.reason) ? req.body.reason[0] : (req.body.reason ?? 'Manual kill');
+    await killCreator(creatorId, reason);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: `${err}` });
@@ -20,7 +21,8 @@ safetyRouter.post('/kill/:creatorId', async (req: AuthRequest, res: Response): P
 
 safetyRouter.post('/revive/:creatorId', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    await reviveCreator(req.params.creatorId);
+    const creatorId = req.params.creatorId as string;
+    await reviveCreator(creatorId);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: `${err}` });
@@ -29,8 +31,9 @@ safetyRouter.post('/revive/:creatorId', async (req: AuthRequest, res: Response):
 
 safetyRouter.get('/audit/:creatorId', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const creatorId = req.params.creatorId as string;
     const logs = await db.query.auditLog.findMany({
-      where: eq(auditLog.creatorId, req.params.creatorId),
+      where: eq(auditLog.creatorId, creatorId),
       orderBy: [desc(auditLog.timestamp)],
       limit: 100,
     });

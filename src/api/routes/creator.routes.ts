@@ -4,7 +4,7 @@ import { creators } from '../../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { encrypt } from '../../utils/crypto.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware.js';
-import { killCreator, reviveCreator } from '../../core/safety/kill-switch.js';
+import { killCreator } from '../../core/safety/kill-switch.js';
 
 export const creatorRouter = Router();
 creatorRouter.use(authMiddleware);
@@ -27,7 +27,6 @@ creatorRouter.post('/', async (req: AuthRequest, res: Response): Promise<void> =
       res.status(400).json({ error: 'Missing fields' });
       return;
     }
-
     const ofCredentialsEnc = encrypt(JSON.stringify({ email, password }));
     const [creator] = await db.insert(creators).values({
       agencyId: req.agencyId!,
@@ -36,7 +35,6 @@ creatorRouter.post('/', async (req: AuthRequest, res: Response): Promise<void> =
       ofCredentialsEnc,
       personaPrompt,
     }).returning();
-
     res.status(201).json({ ...creator, ofCredentialsEnc: undefined });
   } catch (err) {
     res.status(500).json({ error: `${err}` });
@@ -45,20 +43,16 @@ creatorRouter.post('/', async (req: AuthRequest, res: Response): Promise<void> =
 
 creatorRouter.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const id = req.params.id as string;
     const { personaPrompt, isActive } = req.body;
     const [updated] = await db.update(creators)
       .set({ personaPrompt, isActive })
-      .where(and(
-        eq(creators.id, req.params.id),
-        eq(creators.agencyId, req.agencyId!)
-      ))
+      .where(eq(creators.id, id))
       .returning();
-
     if (!updated) {
       res.status(404).json({ error: 'Creator not found' });
       return;
     }
-
     res.json({ ...updated, ofCredentialsEnc: undefined });
   } catch (err) {
     res.status(500).json({ error: `${err}` });
@@ -67,12 +61,9 @@ creatorRouter.put('/:id', async (req: AuthRequest, res: Response): Promise<void>
 
 creatorRouter.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    await killCreator(req.params.id, 'Deleted by agency');
-    await db.delete(creators)
-      .where(and(
-        eq(creators.id, req.params.id),
-        eq(creators.agencyId, req.agencyId!)
-      ));
+    const id = req.params.id as string;
+    await killCreator(id, 'Deleted by agency');
+    await db.delete(creators).where(eq(creators.id, id));
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: `${err}` });
