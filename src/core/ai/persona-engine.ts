@@ -23,7 +23,8 @@ export async function buildPersonaContext(
     limit: 6,
   });
 
-  const basePersona = creator.personaPrompt ?? defaultPersona(creator.name);
+  const basePersona = (creator.personaPrompt ?? defaultPersona(creator.name)) + "
+Always respond in the same language the fan uses. Never switch language mid-conversation.";
 
   const fewShotExamples: { role: 'user' | 'assistant'; content: string }[] = [];
   for (const ex of examples) {
