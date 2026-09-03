@@ -27,7 +27,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center">
       <div className="bg-gray-900 p-8 rounded-xl w-full max-w-md border border-gray-800">
-        <h1 className="text-2xl font-bold text-white mb-2">OF Bot</h1>
+        <h1 className="text-2xl font-bold text-white mb-2">Aura</h1>
         <p className="text-gray-400 mb-8 text-sm">Agency Dashboard</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
