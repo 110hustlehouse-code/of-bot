@@ -17,14 +17,13 @@ export async function buildPersonaContext(
 
   if (!creator) throw new Error(`Creator ${creatorId} not found`);
 
-  // Carica esempi reali della creator per few-shot
   const examples = await db.query.creatorExamples.findMany({
     where: eq(creatorExamples.creatorId, creatorId),
     limit: 6,
   });
 
-  const basePersona = (creator.personaPrompt ?? defaultPersona(creator.name)) + "
-Always respond in the same language the fan uses. Never switch language mid-conversation.";
+  const base = creator.personaPrompt ?? defaultPersona(creator.name);
+  const basePersona = base + '\nAlways respond in the same language the fan uses. Never switch language mid-conversation.';
 
   const fewShotExamples: { role: 'user' | 'assistant'; content: string }[] = [];
   for (const ex of examples) {
@@ -32,10 +31,7 @@ Always respond in the same language the fan uses. Never switch language mid-conv
     fewShotExamples.push({ role: 'assistant', content: ex.creatorReply });
   }
 
-  return {
-    systemPrompt: basePersona,
-    fewShotExamples,
-  };
+  return { systemPrompt: basePersona, fewShotExamples };
 }
 
 function defaultPersona(name: string): string {
