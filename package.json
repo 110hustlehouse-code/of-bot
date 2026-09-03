@@ -1,0 +1,50 @@
+{
+  "name": "of-bot",
+  "version": "1.0.0",
+  "description": "AI chatbot for OnlyFans agencies",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/110hustlehouse-code/of-bot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/110hustlehouse-code/of-bot/issues"
+  },
+  "homepage": "https://github.com/110hustlehouse-code/of-bot#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.123.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.4.1",
+    "bullmq": "^6.3.4",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.2.1",
+    "ioredis": "^6.0.0",
+    "pg": "^8.23.0",
+    "playwright": "^1.62.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "uuid": "^14.0.2",
+    "winston": "^3.19.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/uuid": "^10.0.0"
+  }
+}
