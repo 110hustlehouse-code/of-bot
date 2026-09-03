@@ -1,0 +1,1 @@
+ALTER TABLE "creators" ADD COLUMN "elevenlabs_voice_id" text;

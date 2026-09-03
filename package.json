@@ -26,6 +26,7 @@
   "homepage": "https://github.com/110hustlehouse-code/of-bot#readme",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
+    "@elevenlabs/elevenlabs-js": "^2.66.0",
     "@types/express": "^5.0.6",
     "@types/node": "^26.4.1",
     "@types/pg": "^8.23.1",

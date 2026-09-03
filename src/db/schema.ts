@@ -15,6 +15,7 @@ export const creators = pgTable('creators', {
   ofUsername: text('of_username').notNull(),
   ofCredentialsEnc: text('of_credentials_enc').notNull(),
   personaPrompt: text('persona_prompt'),
+  elevenLabsVoiceId: text('elevenlabs_voice_id'),
   isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at').defaultNow(),
 });
