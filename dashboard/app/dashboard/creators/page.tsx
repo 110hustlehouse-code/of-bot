@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { api, Creator } from '@/lib/api';
 import { Plus, Trash2, Power } from 'lucide-react';
+import VoiceClone from './voice-clone';
 
 export default function CreatorsPage() {
   const [creators, setCreators] = useState<Creator[]>([]);
@@ -99,22 +100,30 @@ export default function CreatorsPage() {
 
       <div className="space-y-3">
         {creators.map((c) => (
-          <div key={c.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5 flex items-center justify-between">
-            <div>
-              <p className="text-white font-medium">{c.name}</p>
-              <p className="text-gray-500 text-sm">@{c.ofUsername}</p>
+          <div key={c.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white font-medium">{c.name}</p>
+                <p className="text-gray-500 text-sm">@{c.ofUsername}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className={`text-xs px-2.5 py-1 rounded-full ${c.isActive ? 'bg-green-900 text-green-400' : 'bg-gray-800 text-gray-400'}`}>
+                  {c.isActive ? 'Attivo' : 'Inattivo'}
+                </span>
+                <button onClick={() => toggleActive(c)} className="text-gray-400 hover:text-white transition">
+                  <Power size={16} />
+                </button>
+                <button onClick={() => handleDelete(c.id)} className="text-gray-400 hover:text-red-400 transition">
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className={`text-xs px-2.5 py-1 rounded-full ${c.isActive ? 'bg-green-900 text-green-400' : 'bg-gray-800 text-gray-400'}`}>
-                {c.isActive ? 'Attivo' : 'Inattivo'}
-              </span>
-              <button onClick={() => toggleActive(c)} className="text-gray-400 hover:text-white transition">
-                <Power size={16} />
-              </button>
-              <button onClick={() => handleDelete(c.id)} className="text-gray-400 hover:text-red-400 transition">
-                <Trash2 size={16} />
-              </button>
-            </div>
+            <VoiceClone
+              creatorId={c.id}
+              creatorName={c.name}
+              hasVoice={!!(c as any).elevenLabsVoiceId}
+              onUpdate={fetchCreators}
+            />
           </div>
         ))}
       </div>
