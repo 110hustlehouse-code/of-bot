@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import { api } from '@/lib/api';
-import { Mic, Trash2, CheckCircle, Upload } from 'lucide-react';
+import { Mic, Trash2, CheckCircle2, Upload } from 'lucide-react';
 
 interface Props {
   creatorId: string;
@@ -41,8 +41,7 @@ export default function VoiceClone({ creatorId, creatorName, hasVoice, onUpdate 
 
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    setAudioBlob(file);
+    if (file) setAudioBlob(file);
   }
 
   async function cloneVoice() {
@@ -58,85 +57,76 @@ export default function VoiceClone({ creatorId, creatorName, hasVoice, onUpdate 
       setAudioBlob(null);
       onUpdate();
     } catch {
-      alert('Errore durante la clonazione. Riprova.');
+      alert('Cloning failed');
     } finally {
       setLoading(false);
     }
   }
 
   async function deleteVoice() {
-    if (!confirm('Eliminare la voce clonata?')) return;
+    if (!confirm('Delete cloned voice?')) return;
     await api.delete(`/api/voice/clone/${creatorId}`);
     setSuccess(false);
     onUpdate();
   }
 
   return (
-    <div className="mt-3 p-4 bg-gray-800 rounded-lg border border-gray-700">
-      <p className="text-gray-300 text-sm font-medium mb-3 flex items-center gap-2">
-        <Mic size={14} /> Voice Clone — {creatorName}
-      </p>
+    <div className="mt-5 pt-5 border-t border-[#1F1F1F]">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[#86868B] text-[11px] tracking-wide flex items-center gap-2">
+          <Mic size={11} /> Voice
+        </p>
+        {(hasVoice || success) && (
+          <button onClick={deleteVoice} className="text-[#48484A] hover:text-[#FF453A] text-[11px] transition-colors">
+            Remove
+          </button>
+        )}
+      </div>
 
       {(hasVoice || success) ? (
-        <div className="flex items-center justify-between">
-          <span className="text-green-400 text-sm flex items-center gap-2">
-            <CheckCircle size={14} /> Voce clonata attiva
-          </span>
-          <button onClick={deleteVoice} className="text-red-400 hover:text-red-300 text-xs flex items-center gap-1">
-            <Trash2 size={12} /> Elimina
-          </button>
+        <div className="flex items-center gap-2 text-[#30D158] text-[13px]">
+          <CheckCircle2 size={14} />
+          <span>Voice cloned and active</span>
         </div>
       ) : (
-        <div className="space-y-3">
-          <p className="text-gray-500 text-xs">Registra o carica 15-30 secondi di voce</p>
-
-          <div className="flex gap-2 flex-wrap">
-            {!recording ? (
-              <button
-                onClick={startRecording}
-                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-sm transition"
-              >
-                <Mic size={14} /> Registra
-              </button>
-            ) : (
-              <button
-                onClick={stopRecording}
-                className="flex items-center gap-2 bg-gray-600 hover:bg-gray-500 text-white px-3 py-1.5 rounded-lg text-sm transition animate-pulse"
-              >
-                ⏹ Stop
-              </button>
-            )}
-
+        <div className="flex items-center gap-2 flex-wrap">
+          {!recording ? (
             <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-sm transition"
+              onClick={startRecording}
+              className="flex items-center gap-2 bg-[#141414] hover:bg-[#1C1C1E] text-white text-[12px] px-3 py-2 rounded-lg border border-[#1F1F1F] transition-all"
             >
-              <Upload size={14} /> Carica file
+              <Mic size={12} /> Record
             </button>
+          ) : (
+            <button
+              onClick={stopRecording}
+              className="flex items-center gap-2 bg-[#FF453A]/10 text-[#FF453A] text-[12px] px-3 py-2 rounded-lg border border-[#FF453A]/30 transition-all"
+            >
+              <div className="w-2 h-2 rounded-sm bg-[#FF453A] animate-pulse" /> Recording — stop
+            </button>
+          )}
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="audio/*"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 bg-[#141414] hover:bg-[#1C1C1E] text-white text-[12px] px-3 py-2 rounded-lg border border-[#1F1F1F] transition-all"
+          >
+            <Upload size={12} /> Upload
+          </button>
 
-            {audioBlob && (
-              <button
-                onClick={cloneVoice}
-                disabled={loading}
-                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-sm transition disabled:opacity-50"
-              >
-                <Upload size={14} /> {loading ? 'Clonazione...' : 'Clona voce'}
-              </button>
-            )}
-          </div>
+          <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" />
 
           {audioBlob && (
-            <p className="text-green-400 text-xs">
-              ✓ Audio pronto ({audioBlob instanceof File ? audioBlob.name : 'registrazione'}) — premi Clona voce
-            </p>
+            <button
+              onClick={cloneVoice}
+              disabled={loading}
+              className="flex items-center gap-2 bg-gradient-to-b from-[#C9A961] to-[#B08F4A] hover:from-[#D4B570] text-black text-[12px] font-medium px-3 py-2 rounded-lg transition-all disabled:opacity-40"
+            >
+              {loading ? 'Cloning' : 'Clone voice'}
+            </button>
+          )}
+
+          {audioBlob && !loading && (
+            <span className="text-[#30D158] text-[11px]">✓ Ready</span>
           )}
         </div>
       )}

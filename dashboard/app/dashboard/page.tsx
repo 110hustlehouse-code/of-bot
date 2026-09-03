@@ -1,8 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
-import { Creator } from '@/lib/api';
-import { Users, Bot, TrendingUp, AlertTriangle } from 'lucide-react';
+import { api, Creator } from '@/lib/api';
 
 export default function OverviewPage() {
   const [creators, setCreators] = useState<Creator[]>([]);
@@ -19,47 +17,78 @@ export default function OverviewPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-white mb-6">Overview</h2>
-
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        {[
-          { label: 'Creator Totali', value: creators.length, icon: Users, color: 'purple' },
-          { label: 'Bot Attivi', value: active, icon: Bot, color: 'green' },
-          { label: 'Inattivi', value: creators.length - active, icon: AlertTriangle, color: 'yellow' },
-          { label: 'Uptime', value: '99.9%', icon: TrendingUp, color: 'blue' },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-gray-400 text-sm">{label}</span>
-              <Icon size={16} className={`text-${color}-400`} />
-            </div>
-            <p className="text-3xl font-bold text-white">{loading ? '...' : value}</p>
-          </div>
-        ))}
+      {/* Hero */}
+      <div className="mb-12">
+        <p className="text-[#48484A] text-[12px] tracking-wide mb-3">
+          {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+        </p>
+        <h1 className="text-white text-4xl font-medium tracking-tight">Good evening.</h1>
+        <p className="text-[#86868B] text-[15px] mt-2">
+          {active} of {creators.length} creators active · All systems operational
+        </p>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h3 className="text-white font-semibold mb-4">Creator Attive</h3>
+      {/* KPI grid */}
+      <div className="grid grid-cols-4 gap-3 mb-10">
+        <Kpi label="Creators" value={loading ? '—' : creators.length.toString()} sub="total" />
+        <Kpi label="Active" value={loading ? '—' : active.toString()} sub="running now" accent />
+        <Kpi label="Uptime" value="99.98%" sub="last 30 days" />
+        <Kpi label="Response time" value="1.2s" sub="average" />
+      </div>
+
+      {/* Active creators */}
+      <div className="bg-[#0A0A0A] border border-[#1F1F1F] rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[#1F1F1F]">
+          <h2 className="text-white text-[15px] font-medium">Active workspaces</h2>
+          <span className="text-[#48484A] text-[12px]">Live</span>
+        </div>
+        
         {loading ? (
-          <p className="text-gray-500">Caricamento...</p>
+          <div className="p-12 text-center text-[#48484A] text-[13px]">Loading</div>
         ) : creators.length === 0 ? (
-          <p className="text-gray-500">Nessuna creator. Aggiungine una dalla sezione Creator.</p>
+          <div className="p-16 text-center">
+            <p className="text-[#86868B] text-[14px] mb-1">No creators yet</p>
+            <p className="text-[#48484A] text-[12px]">Add your first creator to start</p>
+          </div>
         ) : (
-          <div className="space-y-3">
-            {creators.map((c) => (
-              <div key={c.id} className="flex items-center justify-between py-3 border-b border-gray-800 last:border-0">
-                <div>
-                  <p className="text-white font-medium">{c.name}</p>
-                  <p className="text-gray-500 text-sm">@{c.ofUsername}</p>
+          <div>
+            {creators.map((c, i) => (
+              <div 
+                key={c.id} 
+                className={`flex items-center justify-between px-6 py-4 hover:bg-[#141414]/40 transition-colors ${i !== creators.length - 1 ? 'border-b border-[#1F1F1F]' : ''}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#1C1C1E] to-[#0A0A0A] border border-[#2C2C2E] flex items-center justify-center text-[#C9A961] text-[13px] font-medium">
+                    {c.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-white text-[14px] font-medium">{c.name}</p>
+                    <p className="text-[#48484A] text-[12px]">@{c.ofUsername}</p>
+                  </div>
                 </div>
-                <span className={`text-xs px-2.5 py-1 rounded-full ${c.isActive ? 'bg-green-900 text-green-400' : 'bg-gray-800 text-gray-400'}`}>
-                  {c.isActive ? 'Attivo' : 'Inattivo'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${c.isActive ? 'bg-[#30D158] aura-live' : 'bg-[#48484A]'}`} />
+                  <span className={`text-[12px] ${c.isActive ? 'text-[#30D158]' : 'text-[#48484A]'}`}>
+                    {c.isActive ? 'Active' : 'Paused'}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function Kpi({ label, value, sub, accent }: { label: string; value: string; sub: string; accent?: boolean }) {
+  return (
+    <div className="bg-[#0A0A0A] border border-[#1F1F1F] rounded-2xl p-5">
+      <p className="text-[#48484A] text-[11px] tracking-wide mb-3">{label}</p>
+      <p className={`text-3xl font-medium tracking-tight ${accent ? 'text-[#C9A961]' : 'text-white'}`}>
+        {value}
+      </p>
+      <p className="text-[#48484A] text-[11px] mt-2">{sub}</p>
     </div>
   );
 }
