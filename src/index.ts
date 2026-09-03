@@ -11,7 +11,21 @@ import { analyticsRouter } from './api/routes/analytics.routes.js';
 import { safetyRouter } from './api/routes/safety.routes.js';
 
 const app = express();
-app.use(cors());
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+    return;
+  }
+  next();
+});
+app.use(cors({
+  origin: true, // accetta qualsiasi origine in dev
+  credentials: true,
+}));
+
 app.use(express.json());
 
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
