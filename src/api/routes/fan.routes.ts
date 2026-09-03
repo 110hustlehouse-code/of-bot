@@ -7,7 +7,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth.middleware.js';
 export const fanRouter = Router();
 fanRouter.use(authMiddleware);
 
-fanRouter.get('/:creatorId', async (req: AuthRequest, res: Response) => {
+fanRouter.get('/:creatorId', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const fanList = await db.query.fans.findMany({
       where: eq(fans.creatorId, req.params.creatorId),
@@ -19,10 +19,13 @@ fanRouter.get('/:creatorId', async (req: AuthRequest, res: Response) => {
   }
 });
 
-fanRouter.get('/:creatorId/:fanId', async (req: AuthRequest, res: Response) => {
+fanRouter.get('/:creatorId/:fanId', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const fan = await db.query.fans.findFirst({
-      where: and(eq(fans.id, req.params.fanId), eq(fans.creatorId, req.params.creatorId)),
+      where: and(
+        eq(fans.id, req.params.fanId),
+        eq(fans.creatorId, req.params.creatorId)
+      ),
     });
 
     if (!fan) {

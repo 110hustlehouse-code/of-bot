@@ -7,7 +7,9 @@ export interface AuthRequest extends Request {
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
-  const header = req.headers.authorization;
+  const authHeader = req.headers['authorization'];
+  const header = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+
   if (!header?.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Missing token' });
     return;

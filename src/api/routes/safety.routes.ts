@@ -8,16 +8,17 @@ import { authMiddleware, AuthRequest } from '../middleware/auth.middleware.js';
 export const safetyRouter = Router();
 safetyRouter.use(authMiddleware);
 
-safetyRouter.post('/kill/:creatorId', async (req: AuthRequest, res: Response) => {
+safetyRouter.post('/kill/:creatorId', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    await killCreator(req.params.creatorId, req.body.reason ?? 'Manual kill by agency');
+    const reason = Array.isArray(req.body.reason) ? req.body.reason[0] : (req.body.reason ?? 'Manual kill by agency');
+    await killCreator(req.params.creatorId, reason);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: `${err}` });
   }
 });
 
-safetyRouter.post('/revive/:creatorId', async (req: AuthRequest, res: Response) => {
+safetyRouter.post('/revive/:creatorId', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     await reviveCreator(req.params.creatorId);
     res.json({ success: true });
@@ -26,7 +27,7 @@ safetyRouter.post('/revive/:creatorId', async (req: AuthRequest, res: Response) 
   }
 });
 
-safetyRouter.get('/audit/:creatorId', async (req: AuthRequest, res: Response) => {
+safetyRouter.get('/audit/:creatorId', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const logs = await db.query.auditLog.findMany({
       where: eq(auditLog.creatorId, req.params.creatorId),
