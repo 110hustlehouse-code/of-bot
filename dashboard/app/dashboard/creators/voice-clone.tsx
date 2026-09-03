@@ -17,6 +17,7 @@ export default function VoiceClone({ creatorId, creatorName, hasVoice, onUpdate 
   const [success, setSuccess] = useState(false);
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function startRecording() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -36,6 +37,12 @@ export default function VoiceClone({ creatorId, creatorName, hasVoice, onUpdate 
   function stopRecording() {
     mediaRef.current?.stop();
     setRecording(false);
+  }
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAudioBlob(file);
   }
 
   async function cloneVoice() {
@@ -81,8 +88,9 @@ export default function VoiceClone({ creatorId, creatorName, hasVoice, onUpdate 
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-gray-500 text-xs">Registra 15-30 secondi di voce per clonare</p>
-          <div className="flex gap-2">
+          <p className="text-gray-500 text-xs">Registra o carica 15-30 secondi di voce</p>
+
+          <div className="flex gap-2 flex-wrap">
             {!recording ? (
               <button
                 onClick={startRecording}
@@ -98,6 +106,22 @@ export default function VoiceClone({ creatorId, creatorName, hasVoice, onUpdate 
                 ⏹ Stop
               </button>
             )}
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-sm transition"
+            >
+              <Upload size={14} /> Carica file
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="audio/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+
             {audioBlob && (
               <button
                 onClick={cloneVoice}
@@ -108,7 +132,12 @@ export default function VoiceClone({ creatorId, creatorName, hasVoice, onUpdate 
               </button>
             )}
           </div>
-          {audioBlob && <p className="text-green-400 text-xs">✓ Audio registrato — premi Clona voce</p>}
+
+          {audioBlob && (
+            <p className="text-green-400 text-xs">
+              ✓ Audio pronto ({audioBlob instanceof File ? audioBlob.name : 'registrazione'}) — premi Clona voce
+            </p>
+          )}
         </div>
       )}
     </div>
