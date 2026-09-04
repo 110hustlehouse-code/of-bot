@@ -13,6 +13,8 @@ const envSchema = z.object({
   OF_PROXY_USER: z.string().optional(),
   OF_PROXY_PASS: z.string().optional(),
   ELEVENLABS_API_KEY: z.string().optional(),
+  ONLYFANSAPI_KEY: z.string().optional(),
+  TWOCAPTCHA_API_KEY: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

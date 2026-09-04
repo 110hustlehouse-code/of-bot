@@ -10,7 +10,6 @@ import { fanRouter } from './api/routes/fan.routes.js';
 import { analyticsRouter } from './api/routes/analytics.routes.js';
 import { safetyRouter } from './api/routes/safety.routes.js';
 import { voiceRouter } from './api/routes/voice.routes.js';
-import { cookiesRouter } from './api/routes/cookies.routes.js';
 
 const app = express();
 
@@ -32,7 +31,6 @@ app.use('/api/fans', fanRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/safety', safetyRouter);
 app.use('/api/voice', voiceRouter);
-app.use('/api/cookies', cookiesRouter);
 
 app.listen(env.PORT, () => {
   logger.info(`Aura API running on port ${env.PORT}`);

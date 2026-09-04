@@ -7,20 +7,18 @@ export interface MessageJob {
 }
 
 const connection = { url: env.REDIS_URL };
-
 export const pollQueue = new Queue<MessageJob>('poll-messages', { connection });
 
 export function startMessageWorker(): Worker {
   const worker = new Worker<MessageJob>(
     'poll-messages',
     async (job: Job<MessageJob>) => {
-      // Import lazy dentro il worker — evita errori init
       const { isKilled } = await import('../core/safety/kill-switch.js');
       const { eq } = await import('drizzle-orm');
       const { db } = await import('../db/index.js');
-      const { creators } = await import('../db/schema.js');
-      const { getSession } = await import('../core/of-client/session-manager.js');
+      const { creators, messages } = await import('../db/schema.js');
       const { pollNewMessages, sendMessage } = await import('../core/of-client/messages.js');
+      const { isAccountValid } = await import('../core/of-client/session-manager.js');
       const { buildPersonaContext } = await import('../core/ai/persona-engine.js');
       const { getOrCreateFan, buildMemoryContext, extractAndUpdateMemory, updateFanActivity } = await import('../core/ai/memory-engine.js');
       const { callLLM, routeModel } = await import('../core/ai/llm-router.js');
@@ -28,25 +26,27 @@ export function startMessageWorker(): Worker {
       const { calculateHeatScore, updateFanTier } = await import('../core/sales/smart-timing.js');
       const { determineSalesPhase } = await import('../core/sales/state-machine.js');
       const { decrypt } = await import('../utils/crypto.js');
-      const { messages, fans } = await import('../db/schema.js');
 
       const { creatorId } = job.data;
 
-      if (isKilled(creatorId)) {
-        logger.warn(`Skipping killed creator ${creatorId}`);
-        return;
-      }
+      if (isKilled(creatorId)) return;
 
       const creator = await db.query.creators.findFirst({
         where: eq(creators.id, creatorId),
       });
-
       if (!creator || !creator.isActive) return;
 
-      const { email, password } = JSON.parse(decrypt(creator.ofCredentialsEnc));
-      const session = await getSession(creatorId, email, password);
-      const newMessages = await pollNewMessages(session.page, creatorId);
+      // ofCredentialsEnc ora contiene l'accountId di OnlyFansAPI
+      const accountId = decrypt(creator.ofCredentialsEnc);
+      
+      // Verifica sessione ancora valida
+      const valid = await isAccountValid(accountId);
+      if (!valid) {
+        logger.warn(`Account ${accountId} needs re-auth for creator ${creatorId}`);
+        return;
+      }
 
+      const newMessages = await pollNewMessages(accountId, creatorId);
       if (newMessages.length === 0) return;
 
       for (const msg of newMessages) {
@@ -72,7 +72,7 @@ ${memoryContext}
 
 CURRENT SALES PHASE: ${salesContext.phase}
 ${salesContext.phaseInstructions}
-Heat score: ${heat.score}/100. Signals: ${heat.signals.join(', ')}.
+Heat score: ${heat.score}/100.
 Keep reply natural, human, max 2-3 sentences.`;
 
           const model = routeModel({
@@ -92,11 +92,11 @@ Keep reply natural, human, max 2-3 sentences.`;
           const compliance = await checkCompliance(replyText, creatorId, memory.fanId);
           if (!compliance.allowed) {
             logger.warn(`Blocked for fan ${msg.fanId}: ${compliance.reason}`);
-            return;
+            continue;
           }
 
-          const sent = await sendMessage(session.page, msg.fanId, replyText);
-          if (!sent) return;
+          const sent = await sendMessage(accountId, msg.fanId, replyText);
+          if (!sent) continue;
 
           await db.insert(messages).values({
             creatorId,
@@ -114,7 +114,7 @@ Keep reply natural, human, max 2-3 sentences.`;
           await updateFanActivity(memory.fanId);
           await updateFanTier(memory.fanId, memory.totalSpent);
 
-          logger.info(`Reply sent to ${msg.fanId} [${model}] phase:${salesContext.phase} heat:${heat.score}`);
+          logger.info(`Reply sent to ${msg.fanId} [${model}] phase:${salesContext.phase}`);
         } catch (err) {
           logger.error(`processMessage failed for fan ${msg.fanId}: ${err}`);
         }

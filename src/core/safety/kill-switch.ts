@@ -1,10 +1,9 @@
 import { db } from '../../db/index.js';
 import { creators, auditLog } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
-import { removeSession } from '../of-client/session-manager.js';
+import { invalidateAccount } from '../of-client/session-manager.js';
 import { logger } from '../../utils/logger.js';
 
-// Set in-memory per kill switch immediato senza query DB
 const killedCreators = new Set<string>();
 
 export function isKilled(creatorId: string): boolean {
@@ -13,7 +12,7 @@ export function isKilled(creatorId: string): boolean {
 
 export async function killCreator(creatorId: string, reason: string): Promise<void> {
   killedCreators.add(creatorId);
-  removeSession(creatorId);
+  invalidateAccount(creatorId);
 
   await db.update(creators)
     .set({ isActive: false })
@@ -30,10 +29,8 @@ export async function killCreator(creatorId: string, reason: string): Promise<vo
 
 export async function reviveCreator(creatorId: string): Promise<void> {
   killedCreators.delete(creatorId);
-
   await db.update(creators)
     .set({ isActive: true })
     .where(eq(creators.id, creatorId));
-
   logger.info(`Creator ${creatorId} revived`);
 }

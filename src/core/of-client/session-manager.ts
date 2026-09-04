@@ -1,37 +1,25 @@
-import { OFSession, restoreSession } from './auth.js';
+import { checkAccountStatus } from './auth.js';
 import { logger } from '../../utils/logger.js';
 
-const sessions = new Map<string, OFSession>();
+// Cache dello stato account (accountId → autenticato?)
+const authCache = new Map<string, { valid: boolean; lastCheck: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minuti
 
-export async function getSession(
-  creatorId: string,
-  email: string,
-  password: string,
-  savedCookies?: string
-): Promise<OFSession> {
-  if (sessions.has(creatorId)) {
-    return sessions.get(creatorId)!;
+export async function isAccountValid(accountId: string): Promise<boolean> {
+  const cached = authCache.get(accountId);
+  if (cached && Date.now() - cached.lastCheck < CACHE_TTL_MS) {
+    return cached.valid;
   }
-
-  if (!savedCookies) {
-    throw new Error(`No cookies for creator ${creatorId}. Export cookies from browser after manual login.`);
+  
+  const valid = await checkAccountStatus(accountId);
+  authCache.set(accountId, { valid, lastCheck: Date.now() });
+  
+  if (!valid) {
+    logger.warn(`Account ${accountId} not authenticated`);
   }
-
-  try {
-    const session = await restoreSession(creatorId, savedCookies);
-    sessions.set(creatorId, session);
-    return session;
-  } catch (err) {
-    logger.error(`Session restore failed for ${creatorId}: ${err}`);
-    throw err;
-  }
+  return valid;
 }
 
-export function removeSession(creatorId: string): void {
-  sessions.delete(creatorId);
-  logger.info(`Session removed for creator ${creatorId}`);
-}
-
-export function getActiveSessions(): string[] {
-  return Array.from(sessions.keys());
+export function invalidateAccount(accountId: string): void {
+  authCache.delete(accountId);
 }

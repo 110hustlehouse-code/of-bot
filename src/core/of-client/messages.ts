@@ -1,5 +1,7 @@
-import { Page } from 'playwright';
 import { logger } from '../../utils/logger.js';
+import { env } from '../../config/env.js';
+
+const API_BASE = 'https://app.onlyfansapi.com/api';
 
 export interface OFMessage {
   id: string;
@@ -9,33 +11,49 @@ export interface OFMessage {
   timestamp: Date;
 }
 
-export async function pollNewMessages(page: Page, creatorId: string): Promise<OFMessage[]> {
+async function apiCall(path: string, options: RequestInit = {}): Promise<any> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${env.ONLYFANSAPI_KEY}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(`OnlyFansAPI error ${response.status}: ${JSON.stringify(data).slice(0, 200)}`);
+  }
+  return data;
+}
+
+// Polling nuovi messaggi da tutte le chat
+export async function pollNewMessages(accountId: string, creatorId: string): Promise<OFMessage[]> {
   try {
-    await page.goto('https://onlyfans.com/my/chats', { waitUntil: 'networkidle' });
+    // Lista chat recenti
+    const chats = await apiCall(`/${accountId}/chats?limit=20&order=recent`);
     const messages: OFMessage[] = [];
-
-    const chats = await page.$$eval(
-      '[class*="chat-item"]',
-      (els) => els.map((el) => ({
-        fanId: el.getAttribute('data-user-id') ?? '',
-        fanName: el.querySelector('[class*="name"]')?.textContent?.trim() ?? '',
-        hasUnread: el.classList.toString().includes('unread'),
-      }))
-    );
-
-    for (const chat of chats.filter((c) => c.hasUnread && c.fanId)) {
-      const lastMsg = await getLastFanMessage(page, chat.fanId);
-      if (lastMsg) {
-        messages.push({
-          id: `${chat.fanId}_${Date.now()}`,
-          fanId: chat.fanId,
-          fanName: chat.fanName,
-          content: lastMsg,
-          timestamp: new Date(),
-        });
+    
+    for (const chat of chats.data ?? []) {
+      // Solo chat con messaggi non letti
+      if (chat.unreadMessagesCount > 0) {
+        const chatMessages = await apiCall(`/${accountId}/chats/${chat.withUser.id}/messages?limit=5`);
+        
+        for (const msg of chatMessages.data ?? []) {
+          // Solo messaggi in entrata (dal fan, non nostri)
+          if (msg.fromUser?.id === chat.withUser.id && msg.text) {
+            messages.push({
+              id: `${chat.withUser.id}_${msg.id}`,
+              fanId: chat.withUser.id.toString(),
+              fanName: chat.withUser.name ?? chat.withUser.username ?? 'Fan',
+              content: msg.text,
+              timestamp: new Date(msg.createdAt),
+            });
+          }
+        }
       }
     }
-
+    
     logger.debug(`Polled ${messages.length} new messages for creator ${creatorId}`);
     return messages;
   } catch (err) {
@@ -44,35 +62,38 @@ export async function pollNewMessages(page: Page, creatorId: string): Promise<OF
   }
 }
 
-async function getLastFanMessage(page: Page, fanId: string): Promise<string | null> {
+// Invia messaggio a un fan
+export async function sendMessage(accountId: string, fanId: string, text: string): Promise<boolean> {
   try {
-    await page.goto(`https://onlyfans.com/my/chats/chat/${fanId}`, { waitUntil: 'networkidle' });
-    const msgs = await page.$$eval(
-      '[class*="message"]:not([class*="own"])',
-      (els) => els.map((el) => el.textContent?.trim() ?? '')
-    );
-    return msgs[msgs.length - 1] ?? null;
-  } catch {
-    return null;
-  }
-}
-
-export async function sendMessage(page: Page, fanId: string, text: string): Promise<boolean> {
-  try {
-    await page.goto(`https://onlyfans.com/my/chats/chat/${fanId}`, { waitUntil: 'networkidle' });
-
-    const input = await page.$('[class*="chat-input"], textarea[placeholder*="message"]');
-    if (!input) throw new Error('Chat input not found');
-
-    await input.click();
-    await input.type(text, { delay: 30 });
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(500);
-
+    await apiCall(`/${accountId}/chats/${fanId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
     logger.info(`Message sent to fan ${fanId}`);
     return true;
   } catch (err) {
     logger.error(`Send failed to fan ${fanId}: ${err}`);
+    return false;
+  }
+}
+
+// Invia PPV (paid message)
+export async function sendPPV(
+  accountId: string, 
+  fanId: string, 
+  text: string, 
+  price: number, 
+  mediaIds: number[] = []
+): Promise<boolean> {
+  try {
+    await apiCall(`/${accountId}/chats/${fanId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ text, price, mediaFiles: mediaIds }),
+    });
+    logger.info(`PPV sent to fan ${fanId} for $${price}`);
+    return true;
+  } catch (err) {
+    logger.error(`PPV send failed: ${err}`);
     return false;
   }
 }

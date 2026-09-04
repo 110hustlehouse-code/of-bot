@@ -1,82 +1,90 @@
-import { chromium, BrowserContext, Page } from 'playwright';
 import { logger } from '../../utils/logger.js';
-import { getProxyConfig } from '../../utils/proxy.js';
+import { env } from '../../config/env.js';
 
-const OF_BASE = 'https://onlyfans.com';
+const API_BASE = 'https://app.onlyfansapi.com/api';
 
-export interface OFSession {
-  context: BrowserContext;
-  page: Page;
-  creatorId: string;
+export interface OFAccount {
+  accountId: string;
+  onlyfansId: number;
+  username: string;
 }
 
-export async function createOFSession(
-  creatorId: string,
-  email: string,
-  password: string
-): Promise<OFSession> {
-  const proxy = getProxyConfig();
-
-  const browser = await chromium.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+async function apiCall(path: string, options: RequestInit = {}): Promise<any> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${env.ONLYFANSAPI_KEY}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
   });
-
-  const context = await browser.newContext({
-    proxy: proxy as any,
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    viewport: { width: 1280, height: 800 },
-    locale: 'en-US',
-  });
-
-  const page = await context.newPage();
-
-  try {
-    await page.goto(`${OF_BASE}/login`, { waitUntil: 'networkidle' });
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL(`${OF_BASE}/`, { timeout: 15000 });
-    logger.info(`OF session created for creator ${creatorId}`);
-    return { context, page, creatorId };
-  } catch (err) {
-    await browser.close();
-    throw new Error(`OF login failed for creator ${creatorId}: ${err}`);
+  
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(`OnlyFansAPI error ${response.status}: ${JSON.stringify(data)}`);
   }
+  return data;
 }
 
-export async function saveSessionCookies(session: OFSession): Promise<string> {
-  const cookies = await session.context.cookies();
-  return JSON.stringify(cookies);
+// Autentica un account OF (login iniziale)
+export async function authenticateOF(email: string, password: string): Promise<{ attemptId: string; pollingUrl: string }> {
+  logger.info(`Starting auth for ${email}`);
+  const response = await apiCall('/authenticate', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  return {
+    attemptId: response.attempt_id,
+    pollingUrl: response.polling_url,
+  };
 }
 
-export async function restoreSession(
-  creatorId: string,
-  cookiesJson: string
-): Promise<OFSession> {
-  const proxy = getProxyConfig();
+// Polling stato autenticazione
+export async function pollAuthStatus(attemptId: string): Promise<any> {
+  return apiCall(`/authenticate/${attemptId}`);
+}
 
-  const browser = await chromium.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  });
+// Attende che l'auth sia completata
+export async function waitForAuth(attemptId: string, maxWaitMs = 60000): Promise<OFAccount> {
+  const startTime = Date.now();
+  while (Date.now() - startTime < maxWaitMs) {
+    const status = await pollAuthStatus(attemptId);
+    
+    if (status.state === 'authenticated') {
+      return {
+        accountId: status.account.id,
+        onlyfansId: status.account.onlyfans_data.id,
+        username: status.account.onlyfans_data.username,
+      };
+    }
+    
+    if (status.state === 'auth-failed') {
+      throw new Error(`Auth failed: ${status.lastAttempt?.error_message}`);
+    }
+    
+    if (status.lastAttempt?.needs_otp) {
+      throw new Error('2FA required — submit OTP via API');
+    }
+    
+    await new Promise(r => setTimeout(r, 5000));
+  }
+  throw new Error('Auth timeout');
+}
 
-  const context = await browser.newContext({
-    proxy: proxy as any,
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    viewport: { width: 1280, height: 800 },
-    locale: 'en-US',
-  });
+// Lista account collegati
+export async function listAccounts(): Promise<any[]> {
+  return apiCall('/accounts');
+}
 
-  const cookies = JSON.parse(cookiesJson);
-  await context.addCookies(cookies);
+// Rimuovi account
+export async function disconnectAccount(accountId: string): Promise<void> {
+  await apiCall(`/accounts/${accountId}`, { method: 'DELETE' });
+  logger.info(`Account ${accountId} disconnected`);
+}
 
-  const page = await context.newPage();
-  await page.goto(OF_BASE, { waitUntil: 'networkidle' });
-
-  const isLoggedIn = await page.$('a[href="/my/chats"]');
-  if (!isLoggedIn) throw new Error(`Session expired for creator ${creatorId}`);
-
-  logger.info(`OF session restored for creator ${creatorId}`);
-  return { context, page, creatorId };
+// Verifica se account è ancora autenticato
+export async function checkAccountStatus(accountId: string): Promise<boolean> {
+  const accounts = await listAccounts();
+  const account = accounts.find(a => a.id === accountId);
+  return account?.is_authenticated ?? false;
 }

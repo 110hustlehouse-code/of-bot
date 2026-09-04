@@ -1,10 +1,12 @@
 import { Router, Response } from 'express';
 import { db } from '../../db/index.js';
 import { creators } from '../../db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { encrypt } from '../../utils/crypto.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware.js';
 import { killCreator } from '../../core/safety/kill-switch.js';
+import { authenticateOF, waitForAuth, disconnectAccount } from '../../core/of-client/auth.js';
+import { logger } from '../../utils/logger.js';
 
 export const creatorRouter = Router();
 creatorRouter.use(authMiddleware);
@@ -27,15 +29,24 @@ creatorRouter.post('/', async (req: AuthRequest, res: Response): Promise<void> =
       res.status(400).json({ error: 'Missing fields' });
       return;
     }
-    const ofCredentialsEnc = encrypt(JSON.stringify({ email, password }));
+
+    // Autentica su OnlyFansAPI
+    logger.info(`Authenticating creator ${name} on OnlyFansAPI...`);
+    const { attemptId } = await authenticateOF(email, password);
+    const account = await waitForAuth(attemptId);
+
+    // Salva accountId cifrato (invece delle credenziali)
+    const ofCredentialsEnc = encrypt(account.accountId);
+
     const [creator] = await db.insert(creators).values({
       agencyId: req.agencyId!,
       name,
-      ofUsername,
+      ofUsername: account.username,
       ofCredentialsEnc,
       personaPrompt,
     }).returning();
-    res.status(201).json({ ...creator, ofCredentialsEnc: undefined });
+
+    res.status(201).json({ ...creator, ofCredentialsEnc: undefined, connected: true });
   } catch (err) {
     res.status(500).json({ error: `${err}` });
   }
@@ -62,6 +73,14 @@ creatorRouter.put('/:id', async (req: AuthRequest, res: Response): Promise<void>
 creatorRouter.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
+    const creator = await db.query.creators.findFirst({ where: eq(creators.id, id) });
+    
+    if (creator?.ofCredentialsEnc) {
+      const { decrypt } = await import('../../utils/crypto.js');
+      const accountId = decrypt(creator.ofCredentialsEnc);
+      try { await disconnectAccount(accountId); } catch {}
+    }
+    
     await killCreator(id, 'Deleted by agency');
     await db.delete(creators).where(eq(creators.id, id));
     res.json({ success: true });
