@@ -77,7 +77,7 @@ export default function CookieUpload({ creatorId, creatorName }: Props) {
           onChange={(e) => setCookiesJson(e.target.value)}
           rows={3}
           className="w-full bg-[#141414] text-white text-[11px] font-mono rounded-lg px-3 py-2 border border-[#1F1F1F] focus:border-[#C9A961] focus:outline-none resize-none placeholder:text-[#48484A]"
-          placeholder='Paste cookies JSON from browser (use Cookie-Editor extension → Export as JSON)'
+          placeholder="Paste cookies JSON from browser"
         />
         <button
           onClick={upload}
@@ -86,16 +86,7 @@ export default function CookieUpload({ creatorId, creatorName }: Props) {
         >
           <Cookie size={12} /> {loading ? 'Validating...' : 'Upload session'}
         </button>
-        <p className="text-[#48484A] text-[11px]">
-          Install <span className="text-[#86868B]">Cookie-Editor</span> on Chrome → login OF manually → Export as JSON → paste here
-        </p>
       </div>
     </div>
   );
-}sed -i "s/import VoiceClone from '.\/voice-clone';/import VoiceClone from '.\/voice-clone';\nimport CookieUpload from '.\/cookie-upload';/" dashboard/app/dashboard/creators/page.tsx
-
-sed -i "s|<\/VoiceClone>|<\/VoiceClone>\n            <CookieUpload creatorId={c.id} creatorName={c.name} \/>|" dashboard/app/dashboard/creators/page.tsx
-
-git add .
-git commit -m "feat: cookie upload UI nella dashboard creators"
-git push origin main
+}
