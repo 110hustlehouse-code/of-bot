@@ -4,6 +4,7 @@ import { api, Creator } from '@/lib/api';
 import { Plus, Trash2, Power, X } from 'lucide-react';
 import VoiceClone from './voice-clone';
 import CookieUpload from './cookie-upload';
+import RagExamples from './rag-examples';
 
 export default function CreatorsPage() {
   const [creators, setCreators] = useState<Creator[]>([]);

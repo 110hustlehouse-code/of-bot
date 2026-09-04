@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { isAuthenticated, logout } from '@/lib/auth';
-import { LayoutDashboard, Users, BarChart3, Shield, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, Shield, Settings, LogOut } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -18,6 +18,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/dashboard/creators', label: 'Creators', icon: Users },
     { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
     { href: '/dashboard/safety', label: 'Safety', icon: Shield },
+    { href: '/dashboard/settings', label: 'Settings', icon: Settings },
   ];
 
   return (
