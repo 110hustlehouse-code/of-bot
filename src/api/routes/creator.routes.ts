@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { encrypt } from '../../utils/crypto.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware.js';
 import { killCreator } from '../../core/safety/kill-switch.js';
-import { authenticateOF, waitForAuth, disconnectAccount } from '../../core/of-client/auth.js';
+import { authenticateOF, waitForAuth, disconnectAccount, listAccounts } from '../../core/of-client/auth.js';
 import { logger } from '../../utils/logger.js';
 
 export const creatorRouter = Router();
@@ -30,24 +30,39 @@ creatorRouter.post('/', async (req: AuthRequest, res: Response): Promise<void> =
       return;
     }
 
-    // Autentica su OnlyFansAPI
-    logger.info(`Authenticating creator ${name} on OnlyFansAPI...`);
-    const { attemptId } = await authenticateOF(email, password);
-    const account = await waitForAuth(attemptId);
+    const accounts = await listAccounts();
+    let accountId: string;
+    let username = ofUsername;
 
-    // Salva accountId cifrato (invece delle credenziali)
-    const ofCredentialsEnc = encrypt(account.accountId);
+    const existing = accounts.find((a: any) =>
+      a.onlyfans_email === email || a.display_name === email
+    );
+
+    if (existing && existing.is_authenticated) {
+      logger.info(`Reusing existing account ${existing.id}`);
+      accountId = existing.id;
+      username = existing.onlyfans_username ?? ofUsername;
+    } else {
+      logger.info(`Authenticating new creator ${name}...`);
+      const { attemptId } = await authenticateOF(email, password);
+      const account = await waitForAuth(attemptId);
+      accountId = account.accountId;
+      username = account.username;
+    }
+
+    const ofCredentialsEnc = encrypt(accountId);
 
     const [creator] = await db.insert(creators).values({
       agencyId: req.agencyId!,
       name,
-      ofUsername: account.username,
+      ofUsername: username,
       ofCredentialsEnc,
       personaPrompt,
     }).returning();
 
     res.status(201).json({ ...creator, ofCredentialsEnc: undefined, connected: true });
   } catch (err) {
+    logger.error(`Creator creation failed: ${err}`);
     res.status(500).json({ error: `${err}` });
   }
 });
@@ -74,13 +89,13 @@ creatorRouter.delete('/:id', async (req: AuthRequest, res: Response): Promise<vo
   try {
     const id = req.params.id as string;
     const creator = await db.query.creators.findFirst({ where: eq(creators.id, id) });
-    
+
     if (creator?.ofCredentialsEnc) {
       const { decrypt } = await import('../../utils/crypto.js');
       const accountId = decrypt(creator.ofCredentialsEnc);
       try { await disconnectAccount(accountId); } catch {}
     }
-    
+
     await killCreator(id, 'Deleted by agency');
     await db.delete(creators).where(eq(creators.id, id));
     res.json({ success: true });
