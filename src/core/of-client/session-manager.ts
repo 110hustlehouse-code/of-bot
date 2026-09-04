@@ -1,4 +1,4 @@
-import { OFSession, createOFSession, restoreSession } from './auth.js';
+import { OFSession, restoreSession } from './auth.js';
 import { logger } from '../../utils/logger.js';
 
 const sessions = new Map<string, OFSession>();
@@ -13,21 +13,18 @@ export async function getSession(
     return sessions.get(creatorId)!;
   }
 
-  let session: OFSession;
-
-  if (savedCookies) {
-    try {
-      session = await restoreSession(creatorId, savedCookies);
-    } catch {
-      logger.warn(`Cookie restore failed for ${creatorId}, doing fresh login`);
-      session = await createOFSession(creatorId, email, password);
-    }
-  } else {
-    session = await createOFSession(creatorId, email, password);
+  if (!savedCookies) {
+    throw new Error(`No cookies for creator ${creatorId}. Export cookies from browser after manual login.`);
   }
 
-  sessions.set(creatorId, session);
-  return session;
+  try {
+    const session = await restoreSession(creatorId, savedCookies);
+    sessions.set(creatorId, session);
+    return session;
+  } catch (err) {
+    logger.error(`Session restore failed for ${creatorId}: ${err}`);
+    throw err;
+  }
 }
 
 export function removeSession(creatorId: string): void {
