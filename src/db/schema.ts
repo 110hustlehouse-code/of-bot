@@ -5,6 +5,7 @@ export const agencies = pgTable('agencies', {
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
+  telegramChatId: text('telegram_chat_id'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

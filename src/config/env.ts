@@ -14,6 +14,7 @@ const envSchema = z.object({
   OF_PROXY_PASS: z.string().optional(),
   ELEVENLABS_API_KEY: z.string().optional(),
   ONLYFANSAPI_KEY: z.string().optional(),
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
   TWOCAPTCHA_API_KEY: z.string().optional(),
 });
 

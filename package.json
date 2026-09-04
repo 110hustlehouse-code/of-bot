@@ -41,6 +41,7 @@
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.3.0",
+    "node-telegram-bot-api": "^2.1.0",
     "pg": "^8.23.0",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
@@ -52,6 +53,7 @@
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/node-telegram-bot-api": "^0.64.15",
     "@types/uuid": "^10.0.0"
   }
 }

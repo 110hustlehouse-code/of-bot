@@ -16,7 +16,7 @@ export function startMessageWorker(): Worker {
       const { isKilled } = await import('../core/safety/kill-switch.js');
       const { eq } = await import('drizzle-orm');
       const { db } = await import('../db/index.js');
-      const { creators, messages } = await import('../db/schema.js');
+      const { creators, messages, agencies } = await import('../db/schema.js');
       const { pollNewMessages, sendMessage } = await import('../core/of-client/messages.js');
       const { isAccountValid } = await import('../core/of-client/session-manager.js');
       const { buildPersonaContext } = await import('../core/ai/persona-engine.js');
@@ -26,6 +26,7 @@ export function startMessageWorker(): Worker {
       const { calculateHeatScore, updateFanTier } = await import('../core/sales/smart-timing.js');
       const { determineSalesPhase } = await import('../core/sales/state-machine.js');
       const { decrypt } = await import('../utils/crypto.js');
+      const { notifyHandoff, notifyWhaleActivity } = await import('../core/safety/telegram-notifier.js');
 
       const { creatorId } = job.data;
 
@@ -36,10 +37,8 @@ export function startMessageWorker(): Worker {
       });
       if (!creator || !creator.isActive) return;
 
-      // ofCredentialsEnc ora contiene l'accountId di OnlyFansAPI
       const accountId = decrypt(creator.ofCredentialsEnc);
-      
-      // Verifica sessione ancora valida
+
       const valid = await isAccountValid(accountId);
       if (!valid) {
         logger.warn(`Account ${accountId} needs re-auth for creator ${creatorId}`);
@@ -48,6 +47,12 @@ export function startMessageWorker(): Worker {
 
       const newMessages = await pollNewMessages(accountId, creatorId);
       if (newMessages.length === 0) return;
+
+      // Carica agency per Telegram chat ID
+      const agency = creator.agencyId
+        ? await db.query.agencies.findFirst({ where: eq(agencies.id, creator.agencyId) })
+        : null;
+      const telegramChatId = (agency as any)?.telegramChatId ?? null;
 
       for (const msg of newMessages) {
         try {
@@ -92,7 +97,15 @@ Keep reply natural, human, max 2-3 sentences.`;
           const compliance = await checkCompliance(replyText, creatorId, memory.fanId);
           if (!compliance.allowed) {
             logger.warn(`Blocked for fan ${msg.fanId}: ${compliance.reason}`);
+            if (telegramChatId) {
+              await notifyHandoff(telegramChatId, creator.name, msg.fanName, msg.content, compliance.reason ?? 'Compliance block');
+            }
             continue;
+          }
+
+          // Notifica whale activity
+          if (memory.tier === 'whale' && telegramChatId) {
+            await notifyWhaleActivity(telegramChatId, creator.name, msg.fanName, memory.totalSpent, msg.content);
           }
 
           const sent = await sendMessage(accountId, msg.fanId, replyText);
