@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://of-bot-production.up.railway.app';
+const API_URL = 'https://api.aurafullsuite.it';
 
 export const api = axios.create({ baseURL: API_URL });
 
