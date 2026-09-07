@@ -80,3 +80,15 @@ export const ppvEvents = pgTable('ppv_events', {
   sentAt: timestamp('sent_at').defaultNow(),
   purchasedAt: timestamp('purchased_at'),
 });
+
+export const mediaLibrary = pgTable('media_library', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  creatorId: uuid('creator_id').references(() => creators.id),
+  type: text('type').notNull(), // photo, video, audio
+  url: text('url').notNull(),
+  filename: text('filename').notNull(),
+  category: text('category').default('general'), // teasing, explicit, casual, ppv
+  tags: text('tags').array(),
+  usageCount: integer('usage_count').default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+});
