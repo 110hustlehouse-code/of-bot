@@ -92,3 +92,12 @@ export const mediaLibrary = pgTable('media_library', {
   usageCount: integer('usage_count').default(0),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+export const humanTakeover = pgTable('human_takeover', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  creatorId: uuid('creator_id').references(() => creators.id),
+  fanId: uuid('fan_id').references(() => fans.id),
+  isActive: boolean('is_active').default(true),
+  startedAt: timestamp('started_at').defaultNow(),
+  endedAt: timestamp('ended_at'),
+});

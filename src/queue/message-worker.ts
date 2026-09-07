@@ -27,6 +27,7 @@ export function startMessageWorker(): Worker {
       const { determineSalesPhase } = await import('../core/sales/state-machine.js');
       const { decrypt } = await import('../utils/crypto.js');
       const { notifyHandoff, notifyWhaleActivity } = await import('../core/safety/telegram-notifier.js');
+      const { isFanInTakeover } = await import('../api/routes/takeover.routes.js');
 
       const { creatorId } = job.data;
 
@@ -48,7 +49,6 @@ export function startMessageWorker(): Worker {
       const newMessages = await pollNewMessages(accountId, creatorId);
       if (newMessages.length === 0) return;
 
-      // Carica agency per Telegram chat ID
       const agency = creator.agencyId
         ? await db.query.agencies.findFirst({ where: eq(agencies.id, creator.agencyId) })
         : null;
@@ -57,6 +57,20 @@ export function startMessageWorker(): Worker {
       for (const msg of newMessages) {
         try {
           const memory = await getOrCreateFan(creatorId, msg.fanId, msg.fanName);
+
+          // Check takeover — se umano ha preso il controllo, skip AI
+          const inTakeover = await isFanInTakeover(creatorId, memory.fanId);
+          if (inTakeover) {
+            logger.info(`Fan ${msg.fanId} in takeover — skipping AI`);
+            await db.insert(messages).values({
+              creatorId,
+              fanId: memory.fanId,
+              direction: 'in',
+              content: msg.content,
+              isAi: false,
+            });
+            continue;
+          }
 
           await db.insert(messages).values({
             creatorId,
@@ -103,7 +117,6 @@ Keep reply natural, human, max 2-3 sentences.`;
             continue;
           }
 
-          // Notifica whale activity
           if (memory.tier === 'whale' && telegramChatId) {
             await notifyWhaleActivity(telegramChatId, creator.name, msg.fanName, memory.totalSpent, msg.content);
           }
