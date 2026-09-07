@@ -1,4 +1,5 @@
-const TelegramBot = require('node-telegram-bot-api');
+import TelegramBotApi from 'node-telegram-bot-api';
+const TelegramBot = TelegramBotApi as any;
 import { env } from '../../config/env.js';
 import { logger } from '../../utils/logger.js';
 
