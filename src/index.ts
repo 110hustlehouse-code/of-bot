@@ -13,6 +13,7 @@ import { voiceRouter } from './api/routes/voice.routes.js';
 import { settingsRouter } from './api/routes/settings.routes.js';
 import { mediaRouter } from './api/routes/media.routes.js';
 import { takeoverRouter } from './api/routes/takeover.routes.js';
+import { reinforcementRouter } from './api/routes/reinforcement.routes.js';
 import { examplesRouter } from './api/routes/examples.routes.js';
 import { startAllTelegramBots } from './core/tg-client/tg-bot.js';
 
@@ -39,6 +40,7 @@ app.use('/api/voice', voiceRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/media', mediaRouter);
 app.use('/api/takeover', takeoverRouter);
+app.use('/api/reinforcement', reinforcementRouter);
 app.use('/api/examples', examplesRouter);
 
 app.listen(env.PORT, () => {
