@@ -5,6 +5,8 @@ import { Plus, Trash2, Power, X } from 'lucide-react';
 import VoiceClone from './voice-clone';
 import CookieUpload from './cookie-upload';
 import RagExamples from './rag-examples';
+import TelegramConfig from './telegram-config';
+import MediaLibrary from './media-library';
 
 export default function CreatorsPage() {
   const [creators, setCreators] = useState<Creator[]>([]);
