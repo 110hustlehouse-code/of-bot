@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Aura",
+  "version": "1.0.0",
+  "description": "AI chat automation for OnlyFans",
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": ["https://onlyfans.com/*", "https://api.aurafullsuite.it/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://onlyfans.com/*"],
+      "js": ["src/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  }
+}
