@@ -1,14 +1,18 @@
 import { env } from '../../config/env.js';
 import { logger } from '../../utils/logger.js';
 
-let bot: any = null;
+async function sendTelegram(chatId: string, text: string): Promise<void> {
+  if (!env.TELEGRAM_BOT_TOKEN || !chatId) return;
 
-async function getBot() {
-  if (bot) return bot;
-  if (!env.TELEGRAM_BOT_TOKEN) return null;
-  const TelegramBot = (await import('node-telegram-bot-api')).default;
-  bot = new TelegramBot(env.TELEGRAM_BOT_TOKEN);
-  return bot;
+  try {
+    await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
+    });
+  } catch (err) {
+    logger.error(`Telegram send failed: ${err}`);
+  }
 }
 
 export async function notifyHandoff(
@@ -18,26 +22,8 @@ export async function notifyHandoff(
   fanMessage: string,
   reason: string
 ): Promise<void> {
-  const b = await getBot();
-  if (!b || !chatId) return;
-
-  const text = `🔴 *Human Handoff Required*
-
-*Creator:* ${creatorName}
-*Fan:* ${fanName}
-*Reason:* ${reason}
-
-*Message:*
-${fanMessage.slice(0, 300)}
-
-_Reply to this fan manually on OnlyFans._`;
-
-  try {
-    await b.sendMessage(chatId, text, { parse_mode: 'Markdown' });
-    logger.info(`Telegram handoff sent for fan ${fanName}`);
-  } catch (err) {
-    logger.error(`Telegram notification failed: ${err}`);
-  }
+  await sendTelegram(chatId, `🔴 *Human Handoff*\n*Creator:* ${creatorName}\n*Fan:* ${fanName}\n*Reason:* ${reason}\n\n_${fanMessage.slice(0, 300)}_`);
+  logger.info(`Telegram handoff sent for fan ${fanName}`);
 }
 
 export async function notifyAlert(
@@ -45,14 +31,7 @@ export async function notifyAlert(
   title: string,
   details: string
 ): Promise<void> {
-  const b = await getBot();
-  if (!b || !chatId) return;
-
-  try {
-    await b.sendMessage(chatId, `⚠️ *${title}*\n\n${details}`, { parse_mode: 'Markdown' });
-  } catch (err) {
-    logger.error(`Telegram alert failed: ${err}`);
-  }
+  await sendTelegram(chatId, `⚠️ *${title}*\n\n${details}`);
 }
 
 export async function notifyWhaleActivity(
@@ -62,18 +41,5 @@ export async function notifyWhaleActivity(
   totalSpent: number,
   message: string
 ): Promise<void> {
-  const b = await getBot();
-  if (!b || !chatId) return;
-
-  try {
-    await b.sendMessage(chatId, `🐋 *Whale Active*
-
-*Creator:* ${creatorName}
-*Fan:* ${fanName}
-*Total Spent:* $${totalSpent.toFixed(0)}
-
-_${message.slice(0, 200)}_`, { parse_mode: 'Markdown' });
-  } catch (err) {
-    logger.error(`Telegram whale alert failed: ${err}`);
-  }
+  await sendTelegram(chatId, `🐋 *Whale Active*\n*Creator:* ${creatorName}\n*Fan:* ${fanName}\n*Spent:* $${totalSpent.toFixed(0)}\n\n_${message.slice(0, 200)}_`);
 }
