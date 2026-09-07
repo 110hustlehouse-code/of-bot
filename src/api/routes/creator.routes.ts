@@ -103,3 +103,31 @@ creatorRouter.delete('/:id', async (req: AuthRequest, res: Response): Promise<vo
     res.status(500).json({ error: `${err}` });
   }
 });
+
+creatorRouter.put('/:id/telegram', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const { telegramBotToken } = req.body;
+
+    const [updated] = await db.update(creators)
+      .set({ telegramBotToken } as any)
+      .where(eq(creators.id, id))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: 'Creator not found' });
+      return;
+    }
+
+    // Avvia/riavvia il bot TG
+    if (telegramBotToken) {
+      const { stopTelegramBot, startTelegramBot } = await import('../../core/tg-client/tg-bot.js');
+      await stopTelegramBot(id);
+      await startTelegramBot(id, telegramBotToken);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: `${err}` });
+  }
+});

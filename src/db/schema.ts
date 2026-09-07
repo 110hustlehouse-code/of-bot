@@ -17,6 +17,7 @@ export const creators = pgTable('creators', {
   ofCredentialsEnc: text('of_credentials_enc').notNull(),
   personaPrompt: text('persona_prompt'),
   elevenLabsVoiceId: text('elevenlabs_voice_id'),
+  telegramBotToken: text('telegram_bot_token'),
   isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at').defaultNow(),
 });

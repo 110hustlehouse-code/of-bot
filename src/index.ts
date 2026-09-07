@@ -12,6 +12,7 @@ import { safetyRouter } from './api/routes/safety.routes.js';
 import { voiceRouter } from './api/routes/voice.routes.js';
 import { settingsRouter } from './api/routes/settings.routes.js';
 import { examplesRouter } from './api/routes/examples.routes.js';
+import { startAllTelegramBots } from './core/tg-client/tg-bot.js';
 
 const app = express();
 
@@ -40,4 +41,5 @@ app.listen(env.PORT, () => {
   logger.info(`Aura API running on port ${env.PORT}`);
   startMessageWorker();
   startScheduler();
+  startAllTelegramBots();
 });
