@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { isAuthenticated, logout } from '@/lib/auth';
-import { LayoutDashboard, Users, BarChart3, Shield, Settings, LogOut, MessageSquare, Trophy } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, Shield, Settings, LogOut, MessageSquare, Trophy, Puzzle } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -21,6 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/dashboard/takeover', label: 'Live Chat', icon: MessageSquare },
     { href: '/dashboard/agents', label: 'Agents', icon: Trophy },
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+    { href: '/dashboard/extension', label: 'Extension', icon: Puzzle },
   ];
 
   return (

@@ -10,6 +10,6 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "extension/src/selectors.js"],
   "exclude": ["node_modules", "dist"]
 }
