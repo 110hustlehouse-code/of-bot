@@ -110,3 +110,24 @@ Keep reply natural, human, max 2-3 sentences.`;
     res.status(500).json({ error: `${err}` });
   }
 });
+// Crea creator semplificato (senza OnlyFansAPI auth) per uso extension
+extensionRouter.post('/create-creator', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { name, ofUsername, personaPrompt } = req.body;
+    if (!name) {
+      res.status(400).json({ error: 'Name is required' });
+      return;
+    }
+    const [creator] = await db.insert(creators).values({
+      agencyId: req.agencyId!,
+      name,
+      ofUsername: ofUsername || name.toLowerCase().replace(/\s+/g, ''),
+      ofCredentialsEnc: '',
+      personaPrompt: personaPrompt || `You are ${name}, a flirty and engaging OnlyFans creator. Be natural, playful, and build genuine connection.`,
+    }).returning();
+    res.status(201).json({ ...creator, ofCredentialsEnc: undefined });
+  } catch (err) {
+    logger.error(`Extension creator creation failed: ${err}`);
+    res.status(500).json({ error: `${err}` });
+  }
+});
