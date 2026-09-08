@@ -8,7 +8,7 @@
   "content_scripts": [
     {
       "matches": ["https://onlyfans.com/*"],
-      "js": ["src/content.js"],
+      "js": ["src/content.js", "src/sidebar.js"],
       "run_at": "document_idle"
     }
   ],
