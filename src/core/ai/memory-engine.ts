@@ -103,7 +103,7 @@ Return ONLY valid JSON, no explanation.`,
       .update(fans)
       .set({
         personalNotes: updatedNotes,
-        messageCount: db.$count(fans) as any, // aggiornato nel worker
+        
         lastActive: new Date(),
       })
       .where(eq(fans.id, fanDbId));
@@ -115,8 +115,12 @@ Return ONLY valid JSON, no explanation.`,
 }
 
 export async function updateFanActivity(fanDbId: string): Promise<void> {
+  const fan = await db.query.fans.findFirst({ where: eq(fans.id, fanDbId) });
   await db
     .update(fans)
-    .set({ lastActive: new Date() })
+    .set({
+      lastActive: new Date(),
+      messageCount: (fan?.messageCount ?? 0) + 1,
+    })
     .where(eq(fans.id, fanDbId));
 }
