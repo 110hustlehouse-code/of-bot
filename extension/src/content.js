@@ -28,6 +28,8 @@ let isRunning = false;
 let pollInterval = null;
 const processedMessages = new Set();
 let stats = { processed: 0, errors: 0, lastActivity: null };
+let lastHeat = 0;
+let lastPhase = "-";
 
 // === LOGGING ===
 function log(level, msg, data) {
@@ -137,6 +139,22 @@ async function checkNewMessages() {
 
       log('INFO', `Reply sent to ${fanName} (${reply.length} chars, ${delay}ms delay)`);
 
+      // Update sidebar
+      if (typeof window.__auraUpdateFan === 'function') {
+        window.__auraUpdateFan(userId, { name: fanName, lastMsg: fanMessage.slice(0, 80), heat: lastHeat, phase: lastPhase, unread: false });
+      }
+      
+            // Update sidebar with heat/phase data
+      if (typeof window.__auraUpdateFan === 'function') {
+        window.__auraUpdateFan(userId, {
+          name: fanName,
+          lastMsg: fanMessage.slice(0, 80),
+          heat: reply.__heat || 0,
+          phase: reply.__phase || '-',
+          unread: false,
+        });
+      }
+
       // Pause between chats
       await sleep(CONFIG.PAUSE_BETWEEN_CHATS);
 
@@ -185,6 +203,8 @@ async function getAIReplyWithRetry(fanId, fanName, fanMessage) {
       }
 
       log('INFO', `AI reply [${data.model}] phase:${data.phase} heat:${data.heat}`);
+      lastHeat = data.heat || 0;
+      lastPhase = data.phase || '-';
       return data.reply;
 
     } catch (err) {
