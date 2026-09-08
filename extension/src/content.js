@@ -91,6 +91,8 @@ async function checkNewMessages() {
   try {
     const chatItems = document.querySelectorAll(SELECTORS.unreadChat);
 
+    // Phase 1: Scan all unread chats and collect messages
+    const pending = [];
     for (const item of chatItems) {
       const userId = item.getAttribute(SELECTORS.chatUserIdAttr) ||
         item.querySelector(SELECTORS.chatUserLink)?.href?.match(/\/(\d+)\/?$/)?.[1];
@@ -103,30 +105,43 @@ async function checkNewMessages() {
 
       processedMessages.add(userId);
 
-      // Open chat
+      // Open chat to read message
       item.click();
-      await sleep(CONFIG.MIN_REPLY_DELAY);
+      await sleep(800);
 
-      // Extract last fan message
       const msgs = document.querySelectorAll(SELECTORS.fanMessage);
       const lastMsg = msgs[msgs.length - 1];
-      if (!lastMsg) {
-        log('WARN', `No fan message found for ${userId}`);
-        continue;
-      }
+      if (!lastMsg) { log('WARN', `No fan message found for ${userId}`); continue; }
 
       const fanMessage = lastMsg.textContent?.trim();
       if (!fanMessage) continue;
 
       const fanName = document.querySelector(SELECTORS.chatHeaderName)?.textContent?.trim() || 'Fan';
+      log('INFO', `Queued ${fanName}: "${fanMessage.slice(0, 60)}"`);
+      pending.push({ item, userId, fanName, fanMessage });
+    }
 
-      log('INFO', `New message from ${fanName}: "${fanMessage.slice(0, 60)}"`);
+    if (pending.length === 0) return;
+    log('INFO', `Processing ${pending.length} chats in parallel`);
 
-      // Get AI reply with retry
-      const reply = await getAIReplyWithRetry(userId, fanName, fanMessage);
-      if (!reply) continue;
+    // Phase 2: Fire all API calls in parallel
+    const apiResults = await Promise.allSettled(
+      pending.map(p => getAIReplyWithRetry(p.userId, p.fanName, p.fanMessage))
+    );
 
-      // Type and send with human-like delay
+    // Phase 3: Type replies sequentially (DOM requires one at a time)
+    for (let i = 0; i < pending.length; i++) {
+      const p = pending[i];
+      const result = apiResults[i];
+      if (result.status !== 'fulfilled' || !result.value) continue;
+
+      const reply = result.value;
+
+      // Navigate to this chat
+      p.item.click();
+      await sleep(CONFIG.MIN_REPLY_DELAY);
+
+      // Type and send
       const delay = randomBetween(CONFIG.MIN_REPLY_DELAY, CONFIG.MAX_REPLY_DELAY);
       await sleep(delay);
       await typeReply(reply);
@@ -137,7 +152,7 @@ async function checkNewMessages() {
       chrome.storage.local.set({ auraStats: stats });
       chrome.runtime.sendMessage({ type: 'MSG_PROCESSED', stats });
 
-      log('INFO', `Reply sent to ${fanName} (${reply.length} chars, ${delay}ms delay)`);
+      log('INFO', `Reply sent to ${p.fanName} (${reply.length} chars, ${delay}ms delay)`);
 
       // Update sidebar
       if (typeof window.__auraUpdateFan === 'function') {
