@@ -5,6 +5,7 @@ import {
   injectReplyText,
   clickSendButton,
   showHumanModeBadge,
+  debugInspectChat,
 } from "../utils/of-dom";
 
 interface ChatState {
@@ -156,6 +157,7 @@ async function init(): Promise<void> {
     if (isTakeover) showHumanModeBadge(true);
   }
 
+  debugInspectChat();
   startObserver();
 }
 

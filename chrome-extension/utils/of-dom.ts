@@ -176,6 +176,14 @@ export async function clickSendButton(): Promise<boolean> {
   return false;
 }
 
+export function debugInspectChat(): void {
+  const candidates = document.querySelectorAll('[class*="message"],[class*="chat"],[class*="msg"]');
+  console.log(`[Aura Debug] Trovati ${candidates.length} elementi candidati:`);
+  candidates.forEach((el, i) => {
+    if (i < 20) console.log(`  [${i}] ${el.tagName}.${el.className} → "${el.textContent?.slice(0, 50)}"`);
+  });
+}
+
 const BADGE_ID = "aura-human-mode-badge";
 
 export function showHumanModeBadge(active: boolean): void {
