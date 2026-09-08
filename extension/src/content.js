@@ -28,6 +28,8 @@ let isRunning = false;
 let pollInterval = null;
 const processedMessages = new Set();
 let stats = { processed: 0, errors: 0, lastActivity: null };
+let lastHeat = 0;
+let lastPhase = "-";
 
 // === LOGGING ===
 function log(level, msg, data) {
