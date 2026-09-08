@@ -15,9 +15,12 @@
     input { width: 100%; background: #141414; color: #fff; border: 1px solid #1F1F1F; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-bottom: 8px; outline: none; }
     input:focus { border-color: #C9A961; }
     input::placeholder { color: #48484A; }
-    button { width: 100%; background: linear-gradient(180deg, #C9A961, #B08F4A); color: #000; border: none; border-radius: 10px; padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    button { width: 100%; background: linear-gradient(180deg, #C9A961, #B08F4A); color: #000; border: none; border-radius: 10px; padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 8px; }
     button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
     button.secondary { background: #141414; color: #86868B; border: 1px solid #1F1F1F; }
+    .stats { color: #86868B; font-size: 11px; text-align: center; padding: 8px 0; }
+    .error { background: #1A0A0A; border: 1px solid #FF453A; color: #FF453A; font-size: 11px; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; display: none; }
     .info { color: #48484A; font-size: 11px; margin-top: 12px; text-align: center; }
   </style>
 </head>
@@ -26,28 +29,25 @@
     <div class="logo-circle"><div class="logo-dot"></div></div>
     <span class="logo-text">Aura</span>
   </div>
-
   <div class="status" id="status">
     <div class="dot off" id="statusDot"></div>
     <span id="statusText">Not connected</span>
   </div>
-
+  <div class="error" id="errorMsg"></div>
   <div id="loginForm">
     <input type="email" id="email" placeholder="Email" />
     <input type="password" id="password" placeholder="Password" />
     <button id="loginBtn">Connect</button>
   </div>
-
   <div id="controls" style="display:none">
     <div class="status">
       <span>Creator: <strong id="creatorName"></strong></span>
     </div>
     <button id="toggleBtn">Start Aura</button>
-    <button id="logoutBtn" class="secondary" style="margin-top:8px">Disconnect</button>
+    <button id="logoutBtn" class="secondary">Disconnect</button>
+    <div class="stats" id="statsLine"></div>
   </div>
-
   <p class="info">Aura · Enterprise chat automation</p>
-
   <script src="popup.js"></script>
 </body>
 </html>
