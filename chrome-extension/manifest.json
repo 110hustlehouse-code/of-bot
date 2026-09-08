@@ -1,0 +1,23 @@
+{
+  "name": "Aura OF Assistant",
+  "version": "1.0.0",
+  "manifest_version": 3,
+  "description": "Aura OF Assistant Chrome Extension",
+  "permissions": ["storage", "activeTab", "scripting", "sidePanel"],
+  "host_permissions": ["https://*.onlyfans.com/*"],
+  "background": {
+    "service_worker": "dist/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://onlyfans.com/my/chats*"],
+      "js": ["dist/content.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "dist/popup.html"
+  },
+  "side_panel": {
+    "default_path": "dist/sidebar.html"
+  }
+}
