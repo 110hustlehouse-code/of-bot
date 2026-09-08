@@ -1,6 +1,5 @@
 const path = require("path");
 const CopyPlugin = require("copy-webpack-plugin");
-
 module.exports = {
   mode: "production",
   entry: {
@@ -29,6 +28,7 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [
+        { from: "manifest.json", to: "manifest.json" },
         { from: "popup/popup.html", to: "popup.html" },
         { from: "sidebar/sidebar.html", to: "sidebar.html" },
       ],
