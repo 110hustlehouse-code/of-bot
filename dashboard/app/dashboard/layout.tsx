@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { isAuthenticated, logout } from '@/lib/auth';
+import AuraTour from '@/components/tour/AuraTour';
 import { LayoutDashboard, Users, BarChart3, Shield, Settings, LogOut, MessageSquare, Trophy, Puzzle, Activity } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -80,8 +81,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="flex-1 ml-60 min-h-screen">
         <div className="max-w-7xl mx-auto px-10 py-10">
 
-          {/* Status box — alto a destra */}
-          <div className="flex justify-end mb-6">
+          {/* Barra superiore: guida + stato progetto */}
+          <div className="flex justify-end items-center gap-3 mb-6">
+            <AuraTour />
+
             <Link
               href="/dashboard/status"
               className={`group flex items-center gap-3 pl-3.5 pr-4 py-2.5 rounded-xl border transition-all ${
