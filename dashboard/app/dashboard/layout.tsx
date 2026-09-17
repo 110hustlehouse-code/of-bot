@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { isAuthenticated, logout } from '@/lib/auth';
-import { LayoutDashboard, Users, BarChart3, Shield, Settings, LogOut, MessageSquare, Trophy, Puzzle } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, Shield, Settings, LogOut, MessageSquare, Trophy, Puzzle, Activity } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -23,6 +23,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: '/dashboard/settings', label: 'Settings', icon: Settings },
     { href: '/dashboard/extension', label: 'Extension', icon: Puzzle },
   ];
+
+  const onStatus = pathname === '/dashboard/status';
 
   return (
     <div className="min-h-screen bg-black flex">
@@ -77,6 +79,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main */}
       <main className="flex-1 ml-60 min-h-screen">
         <div className="max-w-7xl mx-auto px-10 py-10">
+
+          {/* Status box — alto a destra */}
+          <div className="flex justify-end mb-6">
+            <Link
+              href="/dashboard/status"
+              className={`group flex items-center gap-3 pl-3.5 pr-4 py-2.5 rounded-xl border transition-all ${
+                onStatus
+                  ? 'bg-[#141414] border-[#C9A961]/40'
+                  : 'bg-[#0A0A0A] border-[#1F1F1F] hover:border-[#C9A961]/40 hover:bg-[#141414]'
+              }`}
+            >
+              <span className="relative flex w-2 h-2">
+                <span className="absolute inline-flex w-full h-full rounded-full bg-[#E5A93C] opacity-60 animate-ping" />
+                <span className="relative inline-flex w-2 h-2 rounded-full bg-[#E5A93C]" />
+              </span>
+              <span className="flex flex-col leading-tight">
+                <span className="text-white text-[12px] font-medium">Stato progetto</span>
+                <span className="text-[#86868B] text-[11px]">1 blocco critico · 2 attività pronte</span>
+              </span>
+              <Activity
+                size={14}
+                strokeWidth={2}
+                className={onStatus ? 'text-[#C9A961]' : 'text-[#48484A] group-hover:text-[#C9A961] transition-colors'}
+              />
+            </Link>
+          </div>
+
           {children}
         </div>
       </main>
